@@ -1,0 +1,115 @@
+/*
+  Hatid Suki design tokens. Bootstrap 5 supplies the components; these tokens set the look.
+  Direction: a counter, not a dashboard. Ink on warm paper, one signal colour reserved for actions and things that need attention,
+  flat surfaces separated by thin lines, and numbers set to line up.
+*/
+:root {
+  --hs-bg: #f4f2ed;
+  --hs-surface: #fffefb;
+  --hs-surface-2: #f8f6f1;
+  --hs-ink: #1b1915;
+  --hs-muted: #635d53;
+  --hs-line: #e0dbd0;
+  --hs-line-strong: #cbc4b6;
+  --hs-primary: #b93a14;
+  --hs-primary-hover: #952c0d;
+  --hs-primary-soft: #f9e9e1;
+
+  /* Status colours carry meaning and each pair passes AA contrast. They always appear with words. */
+  --hs-new: #8a3f08;      --hs-new-bg: #fcefcf;
+  --hs-ready: #14582f;    --hs-ready-bg: #dcf1e2;
+  --hs-served: #575148;   --hs-served-bg: #e9e5db;
+  --hs-cancel: #93221f;   --hs-cancel-bg: #f9dedb;
+  --hs-paid: #0d5f58;     --hs-paid-bg: #d3efeb;
+  --hs-attn: #b3261e;
+
+  --hs-shadow: none; /* cards sit flat; only floating things use --hs-float */
+  --hs-radius: 10px;
+  --hs-radius-sm: 8px;
+  /* Only things that float (menus, dialogs, panels) get a shadow, with a real offset and blur. Cards sit flat on the page. */
+  --hs-float: 0 14px 34px rgba(27, 25, 21, .18), 0 2px 6px rgba(27, 25, 21, .10);
+
+  --bs-body-bg: var(--hs-bg);
+  --bs-body-color: var(--hs-ink);
+  --bs-body-font-family: "Public Sans Variable", "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --bs-body-line-height: 1.5;
+  --bs-border-color: var(--hs-line);
+  --bs-primary: var(--hs-primary);
+  --bs-primary-rgb: 185, 58, 20;
+  --bs-link-color: var(--hs-primary);
+  --bs-link-hover-color: var(--hs-primary-hover);
+  --bs-secondary-color: var(--hs-muted);
+}
+
+html, body { min-height: 100%; }
+body { background: var(--hs-bg); color: var(--hs-ink); -webkit-font-smoothing: antialiased; font-feature-settings: "kern", "liga"; }
+h1, h2, h3, h4 { font-weight: 700; letter-spacing: -.015em; text-wrap: balance; }
+p { text-wrap: pretty; }
+.num, .money, table, output { font-variant-numeric: tabular-nums; }
+.text-muted, .text-body-secondary { color: var(--hs-muted) !important; }
+
+/* ---- browser surfaces, themed instead of left at their defaults ---- */
+::selection { background: rgba(185, 58, 20, .22); }
+input, textarea, select { caret-color: var(--hs-primary); }
+input[type="checkbox"], input[type="radio"], progress { accent-color: var(--hs-primary); }
+a { text-underline-offset: .18em; text-decoration-thickness: 1px; }
+* { scrollbar-width: thin; scrollbar-color: #c4bcac transparent; }
+:focus-visible { outline: 2px solid var(--hs-primary); outline-offset: 2px; border-radius: 4px; }
+::placeholder { color: #8b8579; opacity: 1; }
+
+/* ---- buttons and fields ---- */
+.btn { border-radius: var(--hs-radius-sm); font-weight: 600; letter-spacing: 0; }
+.btn-primary {
+  --bs-btn-bg: var(--hs-primary); --bs-btn-border-color: var(--hs-primary);
+  --bs-btn-hover-bg: var(--hs-primary-hover); --bs-btn-hover-border-color: var(--hs-primary-hover);
+  --bs-btn-active-bg: var(--hs-primary-hover); --bs-btn-active-border-color: var(--hs-primary-hover);
+  --bs-btn-disabled-bg: var(--hs-primary); --bs-btn-disabled-border-color: var(--hs-primary);
+}
+.btn-outline-primary {
+  --bs-btn-color: var(--hs-primary); --bs-btn-border-color: var(--hs-primary);
+  --bs-btn-hover-bg: var(--hs-primary); --bs-btn-hover-border-color: var(--hs-primary);
+  --bs-btn-active-bg: var(--hs-primary-hover); --bs-btn-active-border-color: var(--hs-primary-hover);
+}
+.btn-ghost { background: var(--hs-surface); border: 1px solid var(--hs-line-strong); color: var(--hs-ink); }
+.btn-ghost:hover { background: var(--hs-surface-2); border-color: #b3ab9b; color: var(--hs-ink); }
+.btn-ink { background: var(--hs-ink); border-color: var(--hs-ink); color: #fff; }
+.btn-ink:hover { background: #000; border-color: #000; color: #fff; }
+.btn-lg { padding: .75rem 1.25rem; font-size: 1.02rem; }
+.form-control, .form-select { border-radius: var(--hs-radius-sm); border-color: #cdc6b8; padding: .55rem .75rem; background-color: var(--hs-surface); }
+.form-control:focus, .form-select:focus { border-color: var(--hs-primary); box-shadow: 0 0 0 .18rem rgba(185, 58, 20, .16); }
+.form-label { font-weight: 600; font-size: .92rem; margin-bottom: .3rem; }
+.form-text { color: var(--hs-muted); }
+.alert { border-radius: var(--hs-radius-sm); border-width: 1px; }
+.table { --bs-table-bg: transparent; }
+
+/* ---- structure ---- */
+.card-lite { background: var(--hs-surface); border: 1px solid var(--hs-line); border-radius: var(--hs-radius); }
+.page { max-width: 1160px; margin: 0 auto; padding: 1.75rem 1.5rem 4rem; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.page-head h1 { font-size: 1.6rem; font-weight: 750; margin: 0; }
+.page-head p { margin: .2rem 0 0; color: var(--hs-muted); max-width: 62ch; }
+
+/* Status tags: small, square-cornered, words only. */
+.chip { display: inline-flex; align-items: center; padding: .08rem .45rem; border-radius: 4px; font-size: .76rem; font-weight: 650; white-space: nowrap; line-height: 1.5; }
+.chip .bi { display: none; }
+.chip-new { color: var(--hs-new); background: var(--hs-new-bg); }
+.chip-ready { color: var(--hs-ready); background: var(--hs-ready-bg); }
+.chip-served { color: var(--hs-served); background: var(--hs-served-bg); }
+.chip-cancelled { color: var(--hs-cancel); background: var(--hs-cancel-bg); }
+.chip-paid { color: var(--hs-paid); background: var(--hs-paid-bg); }
+.chip-unpaid { color: var(--hs-new); background: var(--hs-new-bg); }
+.chip-attn { color: #fff; background: var(--hs-attn); }
+.chip-muted { color: var(--hs-muted); background: var(--hs-surface-2); border: 1px solid var(--hs-line); }
+
+/* Empty states say what is going on and what to do. No decorative icon above the heading. */
+.empty { text-align: left; padding: 2.25rem 1.75rem; color: var(--hs-muted); max-width: 60ch; }
+.empty .bi { display: none; }
+.empty h3 { font-size: 1.1rem; color: var(--hs-ink); margin-bottom: .3rem; }
+.empty p { margin-bottom: 1rem; }
+
+.skeleton { background: linear-gradient(90deg, #ebe6da 25%, #f4f0e7 37%, #ebe6da 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: var(--hs-radius-sm); }
+@keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } * { scroll-behavior: auto !important; } }
+
+.field-error { color: var(--hs-cancel); font-size: .88rem; margin-top: .3rem; }
+.visually-hidden, .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
