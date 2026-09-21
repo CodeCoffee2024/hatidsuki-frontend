@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  pull_request:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # --legacy-peer-deps works around an npm resolver bug with the current Angular packages.
+      - name: Install
+        run: npm ci --legacy-peer-deps
+
+      - name: Build
+        run: npm run build
+
+      - name: Check the API address
+        run: |
+          if grep -q "YOUR-API" vercel.json; then
+            echo "::warning file=vercel.json::vercel.json still points at the placeholder API address"
+          fi
