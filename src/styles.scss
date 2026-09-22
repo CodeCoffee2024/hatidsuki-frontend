@@ -43,6 +43,12 @@
 
 html, body { min-height: 100%; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; } /* stop mobile Safari/Chrome auto-inflating text on rotation */
+/* Hard safety net: nothing on any screen size is ever allowed to force horizontal scroll, no matter how long a business
+   name, item name or address someone types in. This is a backstop, not a substitute for sane layout, but it means a
+   long unbroken word can never blow out the width of the page on a phone. */
+html, body { overflow-x: hidden; max-width: 100vw; }
+* { min-width: 0; overflow-wrap: break-word; word-break: break-word; }
+img, svg { max-width: 100%; height: auto; }
 body { background: var(--hs-bg); color: var(--hs-ink); -webkit-font-smoothing: antialiased; font-feature-settings: "kern", "liga"; }
 h1, h2, h3, h4 { font-weight: 700; letter-spacing: -.015em; text-wrap: balance; }
 p { text-wrap: pretty; }
