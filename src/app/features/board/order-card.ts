@@ -132,5 +132,7 @@ export class OrderCardComponent {
 
   pct() { const o = this.o(); return o.activeCount ? (o.readyCount / o.activeCount) * 100 : 0; }
   wait() { return minutesSince(this.o().createdAtUtc, this.clock.now()); }
-  summary(p: OrderPart) { return p.lines.map(l => `${l.quantity}× ${l.itemName}`).join(', '); }
+  summary(p: OrderPart) {
+    return p.lines.map(l => `${l.quantity}× ${l.itemName}${l.options.length ? ` (${l.options.map(o => o.optionName).join(', ')})` : ''}`).join(', ');
+  }
 }

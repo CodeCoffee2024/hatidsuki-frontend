@@ -3,7 +3,7 @@ import { Component, OnDestroy, OnInit, inject, input, output, signal } from '@an
 import { FormsModule } from '@angular/forms';
 import { CatalogApi, OrdersApi } from '../../core/api';
 import { errorMessage } from '../../core/http';
-import { Order, OrderPart, PublicItem } from '../../core/models';
+import { Order, OrderLine, OrderPart, PublicItem } from '../../core/models';
 import { MoneyPipe, StatusChipComponent, ToastService } from '../../core/ui';
 import { NotifyDialogComponent } from '../board/notify-dialog';
 import { OrderActions } from '../board/order-actions';
@@ -47,7 +47,9 @@ import { OrderPickerComponent, PickerState } from '../../shared/order-picker';
                     <strong>{{ p.person }}</strong>
                     @if (p.isLateAddition) { <span class="chip chip-new">added later</span> }
                     @if (p.isCancelled) { <span class="chip chip-cancelled">removed · {{ p.cancelReason }}</span> }
-                    <ul class="lines">@for (l of p.lines; track $index) { <li><span class="num">{{ l.quantity }}×</span> {{ l.itemName }} <span class="text-muted money">{{ l.lineTotal | money: o.currency }}</span></li> }</ul>
+                    <ul class="lines">@for (l of p.lines; track $index) {
+                      <li><span class="num">{{ l.quantity }}×</span> {{ l.itemName }}@if (l.options.length) { <span class="text-muted"> ({{ optionNames(l) }})</span> } <span class="text-muted money">{{ l.lineTotal | money: o.currency }}</span></li>
+                    }</ul>
                     @if (p.note) { <div class="text-muted small"><i class="bi bi-chat-left-text"></i> {{ p.note }}</div> }
                   </div>
                   @if (!p.isCancelled) {
@@ -207,12 +209,16 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   ngOnDestroy() { this.actions.onUpdated = null; }
 
   isOpen(o: Order) { return o.status === 'New' || o.status === 'Ready'; }
+  optionNames(l: OrderLine) { return l.options.map(o => o.optionName).join(', '); }
 
   async startAdd() {
     this.adding.set(true);
     if (this.items().length === 0) {
       const all = await this.catalog.items();
-      this.items.set(all.filter(i => !i.isArchived).map(i => ({ id: i.id, name: i.name, description: i.description, price: i.price, category: i.category, unit: i.unit, isAvailable: i.isAvailable })));
+      this.items.set(all.filter(i => !i.isArchived).map(i => ({
+        id: i.id, name: i.name, description: i.description, price: i.price, category: i.category, unit: i.unit,
+        isAvailable: i.isAvailable, optionGroups: i.optionGroups,
+      })));
     }
   }
 

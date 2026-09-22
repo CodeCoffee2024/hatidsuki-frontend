@@ -7,11 +7,12 @@ import { Item } from '../../core/models';
 import { MoneyPipe, ToastService } from '../../core/ui';
 import { ModalComponent } from '../../shared/modal';
 import { BulkEntryComponent } from './bulk-entry';
+import { ItemOptionsEditorComponent } from './item-options-editor';
 
 /** The business's item list: what customers can order. Sold-out is one tap, even for counter staff. */
 @Component({
   selector: 'app-items',
-  imports: [ReactiveFormsModule, MoneyPipe, ModalComponent, BulkEntryComponent],
+  imports: [ReactiveFormsModule, MoneyPipe, ModalComponent, BulkEntryComponent, ItemOptionsEditorComponent],
   template: `
     <div class="page">
       <div class="page-head">
@@ -61,6 +62,11 @@ import { BulkEntryComponent } from './bulk-entry';
                 }
                 @if (canEdit()) {
                   <div class="acts">
+                    @if (!i.isArchived) {
+                      <button type="button" class="btn btn-ghost btn-sm" (click)="optionsFor.set(i)" [attr.aria-label]="'Options for ' + i.name" title="Sizes, flavors, add-ons">
+                        <i class="bi bi-sliders"></i>@if (i.optionGroups.length) { <span class="opt-count">{{ i.optionGroups.length }}</span> }
+                      </button>
+                    }
                     <button type="button" class="btn btn-ghost btn-sm" (click)="edit(i)" [attr.aria-label]="'Edit ' + i.name"><i class="bi bi-pencil"></i></button>
                     <button type="button" class="btn btn-ghost btn-sm" (click)="archive(i)" [attr.aria-label]="(i.isArchived ? 'Restore ' : 'Archive ') + i.name" [title]="i.isArchived ? 'Restore' : 'Archive (keeps past orders intact)'"><i class="bi" [class.bi-archive]="!i.isArchived" [class.bi-arrow-counterclockwise]="i.isArchived"></i></button>
                   </div>
@@ -91,6 +97,9 @@ import { BulkEntryComponent } from './bulk-entry';
       </app-modal>
     }
     @if (bulk()) { <app-bulk-entry (closed)="bulk.set(false)" (saved)="load()" /> }
+    @if (optionsFor(); as oi) {
+      <app-item-options-editor [item]="oi" [allItems]="items()" [currency]="auth.currency()" (closed)="optionsFor.set(null)" (saved)="optionsFor.set(null); load()" />
+    }
   `,
   styles: `
     .toolbar { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
@@ -104,6 +113,7 @@ import { BulkEntryComponent } from './bulk-entry';
     .row-item.dim .info, .row-item.dim .price { opacity: .55; }
     .info { flex: 1; min-width: 0; } .price { font-weight: 650; min-width: 84px; text-align: right; }
     .acts { display: flex; gap: .3rem; }
+    .opt-count { background: var(--hs-primary); color: #fff; border-radius: 999px; font-size: .65rem; padding: 0 .35rem; margin-left: .2rem; }
     .switch { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; min-width: 108px; margin: 0; }
     .switch input { position: absolute; opacity: 0; }
     .switch .track { width: 40px; height: 24px; border-radius: 999px; background: #cfc6b6; position: relative; transition: background .15s; flex: none; }
@@ -116,7 +126,7 @@ import { BulkEntryComponent } from './bulk-entry';
 })
 export class ItemsComponent implements OnInit {
   private readonly api = inject(CatalogApi);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(ToastService);
 
@@ -126,6 +136,7 @@ export class ItemsComponent implements OnInit {
   readonly term = signal('');
   readonly showArchived = signal(false);
   readonly bulk = signal(false);
+  readonly optionsFor = signal<Item | null>(null);
   /** undefined = closed, null = adding, Item = editing */
   readonly editing = signal<Item | null | undefined>(undefined);
   readonly saving = signal(false);

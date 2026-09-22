@@ -2,9 +2,16 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
-  Board, BulkResult, EntryForm, BulkRow, Dashboard, FormDefinition, FormDetail, FormListItem, Item, Notification, Order, Paged,
-  DeliveryLocation, PartInput, PlacedOrder, PublicForm, PublishResult, Source, Tracking, User
+  Board, BulkResult, EntryForm, BulkRow, Dashboard, FormDefinition, FormDetail, FormListItem, Item, Notification,
+  Order, Paged, DeliveryLocation, PartInput, PlacedOrder, PublicForm, PublishResult, Source, Tracking, User
 } from './models';
+
+/** What the item-options editor sends to save a whole "Options" section at once. */
+export interface OptionGroupInput {
+  id?: string | null; name: string; selectionType: 'single' | 'multiple'; required: boolean;
+  minSelect: number | null; maxSelect: number | null;
+  options: { id?: string | null; name: string; priceDelta: number; isAvailable: boolean; isDefault: boolean }[];
+}
 
 const params = (o: Record<string, string | number | boolean | null | undefined>) => {
   let p = new HttpParams();
@@ -25,6 +32,16 @@ export class CatalogApi {
   }
   setAvailability(id: string, available: boolean) { return firstValueFrom(this.http.put<Item>(`/api/items/${id}/availability`, { available })); }
   setArchived(id: string, archived: boolean) { return firstValueFrom(this.http.put<Item>(`/api/items/${id}/archived`, { archived })); }
+
+  saveOptionGroups(itemId: string, groups: OptionGroupInput[]) {
+    return firstValueFrom(this.http.put<Item>(`/api/items/${itemId}/options`, { groups }));
+  }
+  setOptionAvailability(itemId: string, groupId: string, optionId: string, available: boolean) {
+    return firstValueFrom(this.http.put<Item>(`/api/items/${itemId}/options/${groupId}/${optionId}/availability`, { available }));
+  }
+  copyOptionsFrom(itemId: string, sourceItemId: string) {
+    return firstValueFrom(this.http.post<Item>(`/api/items/${itemId}/options/copy-from/${sourceItemId}`, {}));
+  }
   bulk(rows: BulkRow[], onDuplicate: 'skip' | 'update', dryRun: boolean) {
     return firstValueFrom(this.http.post<BulkResult>('/api/items/bulk', { rows, onDuplicate, dryRun }));
   }

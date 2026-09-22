@@ -1,18 +1,37 @@
 import { Component, computed, effect, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { PartInput, PublicItem } from '../core/models';
+import { LineInput, OptionSelections, PartInput, PublicItem } from '../core/models';
 import { MoneyPipe } from '../core/ui';
+import { ItemOptionsPickerComponent, PickedOptions } from './item-options-picker';
 
-interface Person { name: string; qty: Record<string, number>; }
+/** One configured line for an item with option groups: its own quantity, distinct from a plain qty count. */
+interface OptionLine { key: string; itemId: string; options: OptionSelections; quantity: number; }
+interface Person { name: string; qty: Record<string, number>; optionLines: OptionLine[]; }
 export interface PickerState { parts: PartInput[]; total: number; people: number; itemCount: number; }
+
+/** A stable key so re-choosing the exact same options for an item lands on the same cart line. */
+function optionsKey(options: OptionSelections): string {
+  return Object.keys(options).sort().map(k => `${k}:${[...options[k]].sort().join(',')}`).join('|');
+}
+
+function unitPriceOf(item: PublicItem, options: OptionSelections): number {
+  let price = item.price;
+  for (const g of item.optionGroups) for (const id of options[g.id] ?? []) {
+    const o = g.options.find(x => x.id === id);
+    if (o) price += o.priceDelta;
+  }
+  return Math.max(0, price);
+}
 
 /**
  * The item list of an order. One person by default; when group ordering is allowed the customer can add more people,
- * each with their own items, so every person's order stays a separate, trackable line.
+ * each with their own items, so every person's order stays a separate, trackable line. Plain items keep a snappy
+ * +/− stepper; items with option groups (sizes, add-ons — FS-008) open a picker so each distinct choice becomes its
+ * own line (e.g. one Large and one Small of the same drink).
  */
 @Component({
   selector: 'app-order-picker',
-  imports: [FormsModule, MoneyPipe],
+  imports: [FormsModule, MoneyPipe, ItemOptionsPickerComponent],
   template: `
     @if (allowGroup()) {
       <div class="people" role="tablist" aria-label="People in this order">
@@ -46,26 +65,49 @@ export interface PickerState { parts: PartInput[]; total: number; people: number
       @if (g.category) { <h3 class="cat">{{ g.category }}</h3> }
       <ul class="items">
         @for (i of g.items; track i.id) {
-          <li class="item" [class.out]="!i.isAvailable" [class.has]="qty(i.id) > 0">
+          <li class="item" [class.out]="!i.isAvailable" [class.has]="qty(i.id) > 0 || linesFor(i.id).length > 0">
             <div class="info">
               <span class="name">{{ i.name }}</span>
               @if (i.description) { <span class="desc">{{ i.description }}</span> }
               <span class="price money">{{ i.price | money: currency() }}@if (i.unit && i.unit !== 'each') { <span class="unit"> / {{ i.unit }}</span> }</span>
             </div>
             @if (i.isAvailable) {
-              <div class="stepper" role="group" [attr.aria-label]="'Quantity of ' + i.name">
-                <button type="button" class="step" (click)="change(i.id, -1)" [disabled]="qty(i.id) === 0" aria-label="One fewer">−</button>
-                <output class="q num" aria-live="polite">{{ qty(i.id) }}</output>
-                <button type="button" class="step" (click)="change(i.id, 1)" aria-label="One more">+</button>
-              </div>
+              @if (i.optionGroups.length === 0) {
+                <div class="stepper" role="group" [attr.aria-label]="'Quantity of ' + i.name">
+                  <button type="button" class="step" (click)="change(i.id, -1)" [disabled]="qty(i.id) === 0" aria-label="One fewer">−</button>
+                  <output class="q num" aria-live="polite">{{ qty(i.id) }}</output>
+                  <button type="button" class="step" (click)="change(i.id, 1)" aria-label="One more">+</button>
+                </div>
+              } @else {
+                <button type="button" class="btn btn-ghost btn-sm choose" (click)="pickerItem.set(i)">
+                  {{ linesFor(i.id).length ? 'Add another' : 'Choose' }}
+                </button>
+              }
             } @else {
               <span class="chip chip-muted">Sold out</span>
             }
           </li>
+          @for (l of linesFor(i.id); track l.key) {
+            <li class="option-line">
+              <span class="opt-summary">{{ summarize(i, l.options) }}</span>
+              <span class="money">{{ unitPriceOf(i, l.options) | money: currency() }}</span>
+              <div class="stepper sm" role="group" [attr.aria-label]="'Quantity'">
+                <button type="button" class="step" (click)="changeOptionLine(l.key, -1)" aria-label="One fewer">−</button>
+                <output class="q num" aria-live="polite">{{ l.quantity }}</output>
+                <button type="button" class="step" (click)="changeOptionLine(l.key, 1)" aria-label="One more">+</button>
+              </div>
+              <button type="button" class="btn btn-ghost btn-sm" (click)="editingLine.set(l); pickerItem.set(i)" [attr.aria-label]="'Edit'"><i class="bi bi-pencil"></i></button>
+            </li>
+          }
         }
       </ul>
     } @empty {
       <div class="empty"><i class="bi bi-basket"></i><h3>Nothing to order yet</h3><p>There are no items available right now.</p></div>
+    }
+
+    @if (pickerItem(); as pi) {
+      <app-item-options-picker [item]="pi" [currency]="currency()" [initial]="editingLine() ? { options: editingLine()!.options, quantity: editingLine()!.quantity } : null"
+                                (confirmed)="onConfirm(pi.id, $event)" (closed)="pickerItem.set(null); editingLine.set(null)" />
     }
   `,
   styles: `
@@ -92,7 +134,11 @@ export interface PickerState { parts: PartInput[]; total: number; people: number
     .step { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--hs-line); background: var(--hs-surface); font-size: 1.35rem; line-height: 1; color: var(--hs-ink); }
     .step:hover:not(:disabled) { background: var(--hs-primary-soft); border-color: var(--hs-primary); }
     .step:disabled { opacity: .35; }
+    .stepper.sm .step { width: 34px; height: 34px; font-size: 1.1rem; }
     .q { min-width: 2.1rem; text-align: center; font-weight: 700; font-size: 1.1rem; }
+    .choose { min-height: 44px; }
+    .option-line { display: flex; align-items: center; gap: .6rem; margin: -.3rem 0 0 1.2rem; padding: .5rem .8rem; background: var(--hs-surface-2); border-radius: 10px; }
+    .opt-summary { flex: 1; min-width: 0; font-size: .9rem; color: var(--hs-ink); }
   `,
 })
 export class OrderPickerComponent {
@@ -104,9 +150,13 @@ export class OrderPickerComponent {
   readonly firstName = input('');
   readonly changed = output<PickerState>();
 
-  readonly people = signal<Person[]>([{ name: '', qty: {} }]);
+  readonly people = signal<Person[]>([{ name: '', qty: {}, optionLines: [] }]);
   readonly active = signal(0);
   readonly current = computed(() => this.people()[this.active()] ?? this.people()[0]);
+  readonly pickerItem = signal<PublicItem | null>(null);
+  readonly editingLine = signal<OptionLine | null>(null);
+
+  readonly unitPriceOf = unitPriceOf;
 
   readonly groups = computed(() => {
     const map = new Map<string, PublicItem[]>();
@@ -115,14 +165,25 @@ export class OrderPickerComponent {
   });
 
   readonly state = computed<PickerState>(() => {
-    const price = new Map(this.items().map(i => [i.id, i.price]));
+    const byId = new Map(this.items().map(i => [i.id, i]));
     const people = this.people();
     let total = 0, itemCount = 0;
     const parts: PartInput[] = [];
     people.forEach((p, idx) => {
-      const lines = Object.entries(p.qty).filter(([, q]) => q > 0).map(([itemId, quantity]) => ({ itemId, quantity }));
+      const lines: LineInput[] = [];
+      for (const [itemId, quantity] of Object.entries(p.qty)) {
+        if (quantity <= 0) continue;
+        const item = byId.get(itemId);
+        lines.push({ itemId, quantity });
+        total += (item?.price ?? 0) * quantity; itemCount += quantity;
+      }
+      for (const l of p.optionLines) {
+        const item = byId.get(l.itemId);
+        if (!item) continue;
+        lines.push({ itemId: l.itemId, quantity: l.quantity, options: l.options });
+        total += unitPriceOf(item, l.options) * l.quantity; itemCount += l.quantity;
+      }
       if (!lines.length && people.length > 1) return; // an empty person is ignored, not an error
-      for (const l of lines) { total += (price.get(l.itemId) ?? 0) * l.quantity; itemCount += l.quantity; }
       const name = p.name.trim() || (idx === 0 ? this.firstName() : '');
       parts.push({ person: name || null, lines });
     });
@@ -132,7 +193,12 @@ export class OrderPickerComponent {
   constructor() { effect(() => this.changed.emit(this.state())); }
 
   qty(id: string) { return this.current().qty[id] ?? 0; }
-  count(p: Person) { return Object.values(p.qty).reduce((a, b) => a + b, 0); }
+  linesFor(itemId: string) { return this.current().optionLines.filter(l => l.itemId === itemId); }
+  count(p: Person) { return Object.values(p.qty).reduce((a, b) => a + b, 0) + p.optionLines.reduce((a, l) => a + l.quantity, 0); }
+  summarize(item: PublicItem, options: OptionSelections) {
+    const names = item.optionGroups.flatMap(g => (options[g.id] ?? []).map(id => g.options.find(o => o.id === id)?.name)).filter(Boolean);
+    return names.length ? names.join(', ') : 'No add-ons';
+  }
 
   change(id: string, delta: number) {
     const idx = this.active();
@@ -141,19 +207,46 @@ export class OrderPickerComponent {
   setName(name: string) { const idx = this.active(); this.people.update(l => l.map((p, i) => (i === idx ? { ...p, name } : p))); }
   addPerson(copy: boolean) {
     const prev = this.current();
-    this.people.update(l => [...l, { name: '', qty: copy ? { ...prev.qty } : {} }]);
+    this.people.update(l => [...l, { name: '', qty: copy ? { ...prev.qty } : {}, optionLines: copy ? prev.optionLines.map(x => ({ ...x })) : [] }]);
     this.active.set(this.people().length - 1);
   }
   copyPrevious() {
     const idx = this.active();
     if (idx === 0) return;
     const prev = this.people()[idx - 1];
-    this.people.update(l => l.map((p, i) => (i === idx ? { ...p, qty: { ...prev.qty } } : p)));
+    this.people.update(l => l.map((p, i) => (i === idx ? { ...p, qty: { ...prev.qty }, optionLines: prev.optionLines.map(x => ({ ...x })) } : p)));
   }
   removePerson() {
     const idx = this.active();
     this.people.update(l => l.filter((_, i) => i !== idx));
     this.active.set(Math.max(0, idx - 1));
   }
-  reset() { this.people.set([{ name: '', qty: {} }]); this.active.set(0); }
+  reset() { this.people.set([{ name: '', qty: {}, optionLines: [] }]); this.active.set(0); }
+
+  // ---- items with option groups ----
+  onConfirm(itemId: string, picked: PickedOptions) {
+    const idx = this.active();
+    const editing = this.editingLine();
+    const key = `${itemId}::${optionsKey(picked.options)}`;
+    this.people.update(list => list.map((p, i) => {
+      if (i !== idx) return p;
+      // Editing removes the line's old entry first, so re-saving with unchanged options replaces it rather than adding to it;
+      // only a genuine collision with a *different* line merges quantities.
+      const withoutEdited = editing ? p.optionLines.filter(l => l.key !== editing.key) : p.optionLines;
+      const existing = withoutEdited.find(l => l.key === key);
+      const lines = existing
+        ? withoutEdited.map(l => (l.key === key ? { ...l, quantity: Math.min(99, l.quantity + picked.quantity) } : l))
+        : [...withoutEdited, { key, itemId, options: picked.options, quantity: picked.quantity }];
+      return { ...p, optionLines: lines };
+    }));
+    this.pickerItem.set(null); this.editingLine.set(null);
+  }
+  changeOptionLine(key: string, delta: number) {
+    const idx = this.active();
+    this.people.update(list => list.map((p, i) => {
+      if (i !== idx) return p;
+      const lines = p.optionLines.map(l => (l.key === key ? { ...l, quantity: l.quantity + delta } : l)).filter(l => l.quantity > 0);
+      return { ...p, optionLines: lines };
+    }));
+  }
 }

@@ -8,9 +8,22 @@ export interface User {
 }
 export interface Session { accessToken: string; user: User; }
 
+// ---- item options & variants (FS-008): sizes, flavors, add-ons ----
+export type SelectionType = 'single' | 'multiple';
+export interface ItemOption {
+  id: string; name: string; priceDelta: number; isAvailable: boolean; isDefault: boolean; sortOrder: number;
+}
+export interface ItemOptionGroup {
+  id: string; name: string; selectionType: SelectionType; required: boolean;
+  minSelect: number | null; maxSelect: number | null; sortOrder: number; options: ItemOption[];
+}
+/** Group id → the option ids chosen from it. */
+export type OptionSelections = Record<string, string[]>;
+
 export interface Item {
   id: string; name: string; description: string | null; price: number; category: string | null;
   unit: string; isAvailable: boolean; isArchived: boolean; sortOrder: number;
+  optionGroups: ItemOptionGroup[]; defaultPrice: number;
 }
 
 export type FieldType = 'shortText' | 'paragraph' | 'number' | 'email' | 'phone' | 'singleChoice' | 'dropdown'
@@ -41,6 +54,7 @@ export interface Source { id: string; name: string; code: string; isActive: bool
 // ---- customer-facing ----
 export interface PublicItem {
   id: string; name: string; description: string | null; price: number; category: string | null; unit: string; isAvailable: boolean;
+  optionGroups: ItemOptionGroup[];
 }
 export interface PublicLocation { id: string; name: string; note: string | null; }
 export interface PublicForm {
@@ -48,7 +62,7 @@ export interface PublicForm {
   closedMessage: string | null; definition: FormDefinition | null; items: PublicItem[]; version: number; sourceName: string | null;
   locations: PublicLocation[];
 }
-export interface LineInput { itemId: string; quantity: number; note?: string | null; }
+export interface LineInput { itemId: string; quantity: number; note?: string | null; options?: OptionSelections | null; }
 export interface PartInput { person: string | null; note?: string | null; lines: LineInput[]; }
 export interface PlacedOrder {
   orderId: string; number: number; total: number; currency: string; trackingToken: string;
@@ -63,7 +77,10 @@ export interface Tracking {
 
 // ---- orders ----
 export type OrderStatus = 'New' | 'Ready' | 'Served' | 'Cancelled';
-export interface OrderLine { itemName: string; quantity: number; unitPrice: number; lineTotal: number; note: string | null; }
+export interface SelectedOption { groupName: string; optionName: string; priceDelta: number; }
+export interface OrderLine {
+  itemName: string; quantity: number; unitPrice: number; lineTotal: number; note: string | null; options: SelectedOption[];
+}
 export interface OrderPart {
   id: string; person: string; note: string | null; isReady: boolean; isPaid: boolean; paidBy: string | null;
   isCancelled: boolean; cancelReason: string | null; isLateAddition: boolean; subtotal: number; lines: OrderLine[];

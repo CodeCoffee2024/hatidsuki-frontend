@@ -108,7 +108,10 @@ export class ManualOrderComponent implements OnInit {
       this.locations.set(locations);
       this.forms.set(forms);
       this.formCode.set(forms[0]?.code ?? '');
-      this.items.set(items.filter(i => !i.isArchived).map(i => ({ id: i.id, name: i.name, description: i.description, price: i.price, category: i.category, unit: i.unit, isAvailable: i.isAvailable })));
+      this.items.set(items.filter(i => !i.isArchived).map(i => ({
+        id: i.id, name: i.name, description: i.description, price: i.price, category: i.category, unit: i.unit,
+        isAvailable: i.isAvailable, optionGroups: i.optionGroups,
+      })));
     } catch (e) { this.error.set(errorMessage(e)); } finally { this.loading.set(false); }
   }
 
