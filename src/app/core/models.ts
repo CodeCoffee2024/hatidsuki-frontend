@@ -109,6 +109,13 @@ export interface BulkRow { name: string; price: string; category: string; descri
 export interface BulkRowResult { row: number; status: 'created' | 'updated' | 'skipped' | 'error'; message: string | null; }
 export interface BulkResult { created: number; updated: number; skipped: number; errors: number; dryRun: boolean; rows: BulkRowResult[]; }
 
+// ---- platform admin (the operator's own console, separate from any workspace) ----
+export interface AdminWorkspace {
+  id: string; name: string; slug: string; currency: string; timezone: string; createdAtUtc: string;
+  isSuspended: boolean; suspendedAtUtc: string | null; suspendedReason: string | null;
+  ownerName: string | null; ownerEmail: string | null; itemCount: number; formCount: number; orderCount: number;
+}
+
 // ---- dashboard ----
 export interface Kpis { orders: number; people: number; sales: number; collected: number; outstanding: number; averageOrder: number; cancelled: number; }
 export interface Dashboard {

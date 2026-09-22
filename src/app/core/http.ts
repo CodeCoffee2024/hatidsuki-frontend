@@ -4,9 +4,11 @@ import { Router, CanActivateFn } from '@angular/router';
 import { catchError, from, switchMap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { Role } from './models';
+import { PlatformAuthService } from './platform-auth.service';
 
 const isAuthCall = (url: string) => url.includes('/api/auth/login') || url.includes('/api/auth/register') || url.includes('/api/auth/refresh');
-const needsToken = (url: string) => url.startsWith('/api/') && !url.startsWith('/api/public/') && !isAuthCall(url);
+// Platform-admin calls carry their own bearer token (see PlatformApi) and must never receive the tenant's token instead.
+const needsToken = (url: string) => url.startsWith('/api/') && !url.startsWith('/api/public/') && !url.startsWith('/api/platform/') && !isAuthCall(url);
 
 /** Adds the bearer token, and on a 401 silently refreshes once and retries the request. */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
@@ -39,6 +41,9 @@ export const roleGuard = (...roles: Role[]): CanActivateFn => () =>
 
 export const guestGuard: CanActivateFn = () =>
   !inject(AuthService).isSignedIn() || inject(Router).createUrlTree(['/app/board']);
+
+export const platformAuthGuard: CanActivateFn = () =>
+  inject(PlatformAuthService).isSignedIn() || inject(Router).createUrlTree(['/platform/login']);
 
 /** Turns any API failure into a sentence a person can act on. */
 export function errorMessage(e: unknown): string {

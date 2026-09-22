@@ -1,9 +1,13 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, roleGuard } from './core/http';
+import { authGuard, guestGuard, platformAuthGuard, roleGuard } from './core/http';
 
 export const routes: Routes = [
   { path: 'login', canActivate: [guestGuard], loadComponent: () => import('./features/auth/login').then(m => m.LoginComponent) },
   { path: 'register', canActivate: [guestGuard], loadComponent: () => import('./features/auth/register').then(m => m.RegisterComponent) },
+
+  // The platform operator's own console. Deliberately outside /app: no business's Owner/Manager/Staff role reaches this.
+  { path: 'platform/login', loadComponent: () => import('./features/platform/platform-login').then(m => m.PlatformLoginComponent) },
+  { path: 'platform', canActivate: [platformAuthGuard], loadComponent: () => import('./features/platform/platform-dashboard').then(m => m.PlatformDashboardComponent) },
 
   // Customer-facing pages: no sign-in. Reached from a QR code.
   { path: 'q/:code', loadComponent: () => import('./features/public/public-order').then(m => m.PublicOrderComponent) },
