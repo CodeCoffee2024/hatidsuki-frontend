@@ -113,3 +113,10 @@ a { text-underline-offset: .18em; text-decoration-thickness: 1px; }
 
 .field-error { color: var(--hs-cancel); font-size: .88rem; margin-top: .3rem; }
 .visually-hidden, .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Printing (order tickets, FS-026): only the printable content a component opts into should ever reach paper. */
+@media print {
+  app-toast-host, .tabbar, aside.side { display: none !important; }
+  .shell { grid-template-columns: 1fr !important; padding-bottom: 0 !important; }
+  body { background: #fff; }
+}

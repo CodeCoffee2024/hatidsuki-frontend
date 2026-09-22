@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CatalogApi, OrdersApi } from '../../core/api';
+import { AuthService } from '../../core/auth.service';
 import { errorMessage } from '../../core/http';
 import { Order, OrderLine, OrderPart, PublicItem } from '../../core/models';
 import { MoneyPipe, StatusChipComponent, ToastService } from '../../core/ui';
@@ -23,7 +24,11 @@ import { OrderPickerComponent, PickerState } from '../../shared/order-picker';
             <div class="title"><span class="num">#{{ o.number }}</span> <strong>{{ o.customerName }}</strong></div>
             <div class="text-muted small">{{ o.createdAtUtc | date: 'medium' }} · {{ o.source ?? 'Direct link' }}</div>
           </div>
-          <div class="d-flex align-items-center gap-2"><app-status-chip [status]="o.status" /><button type="button" class="btn-close" aria-label="Close" (click)="closed.emit()"></button></div>
+          <div class="d-flex align-items-center gap-2">
+            <app-status-chip [status]="o.status" />
+            <button type="button" class="btn btn-ghost btn-sm" (click)="print()" aria-label="Print ticket" title="Print ticket"><i class="bi bi-printer"></i></button>
+            <button type="button" class="btn-close" aria-label="Close" (click)="closed.emit()"></button>
+          </div>
         </header>
 
         <div class="scroll">
@@ -123,6 +128,30 @@ import { OrderPickerComponent, PickerState } from '../../shared/order-picker';
       }
     </aside>
 
+    <!-- Print only: a clean ticket, one section per person, independent of the on-screen panel's fixed layout. -->
+    @if (order(); as o) {
+      <div class="ticket">
+        <header><strong>{{ auth.user()?.workspaceName }}</strong><span>Order #{{ o.number }} · {{ o.createdAtUtc | date: 'medium' }}</span></header>
+        <p>{{ o.customerName }}@if (o.customerPhone) { · {{ o.customerPhone }} }@if (o.source) { · {{ o.source }} }</p>
+        @if (o.deliveryLocation) { <p><strong>Deliver to:</strong> {{ o.deliveryLocation }}@if (o.deliveryNote) { , {{ o.deliveryNote }} }</p> }
+        @for (p of o.parts; track p.id) {
+          @if (!p.isCancelled) {
+            <section class="tperson">
+              <h4>{{ p.person }}@if (p.isPaid) { <span> · Paid</span> }</h4>
+              <ul>
+                @for (l of p.lines; track $index) {
+                  <li><span>{{ l.quantity }}× {{ l.itemName }}@if (l.options.length) { <em> ({{ optionNames(l) }})</em> }@if (l.note) { <br><small>{{ l.note }}</small> }</span><span>{{ l.lineTotal | money: o.currency }}</span></li>
+                }
+              </ul>
+              @if (p.note) { <p class="pnote">Note: {{ p.note }}</p> }
+              <p class="psub">Subtotal: {{ p.subtotal | money: o.currency }}</p>
+            </section>
+          }
+        }
+        <footer><strong>Total: {{ o.total | money: o.currency }}</strong><span>{{ o.paymentStatus === 'Paid' ? 'Paid' : 'Cash on pickup' }}</span></footer>
+      </div>
+    }
+
     @if (cancelling() && order(); as o) {
       <app-modal heading="Cancel this order?" (closed)="cancelling.set(false)">
         <p>This releases everything on order #{{ o.number }}. It can’t be undone.</p>
@@ -137,6 +166,20 @@ import { OrderPickerComponent, PickerState } from '../../shared/order-picker';
     @if (notify() && order(); as o) { <app-notify-dialog [order]="o" (closed)="notify.set(false)" /> }
   `,
   styles: `
+    .ticket { display: none; }
+    @media print {
+      .scrim, .drawer { display: none !important; }
+      .ticket { display: block; font-size: 13px; color: #000; max-width: 340px; margin: 0 auto; }
+      .ticket header { display: flex; flex-direction: column; gap: .1rem; border-bottom: 1px dashed #000; padding-bottom: .5rem; margin-bottom: .5rem; }
+      .ticket header strong { font-size: 1.1rem; }
+      .tperson { break-inside: avoid; break-after: page; padding-top: .3rem; }
+      .tperson:last-of-type { break-after: auto; }
+      .tperson h4 { margin: .4rem 0; font-size: 1rem; border-bottom: 1px solid #000; padding-bottom: .2rem; }
+      .tperson ul { list-style: none; margin: 0; padding: 0; }
+      .tperson li { display: flex; justify-content: space-between; gap: .5rem; padding: .15rem 0; }
+      .pnote, .psub { margin: .3rem 0 0; }
+      .ticket footer { display: flex; justify-content: space-between; margin-top: .6rem; padding-top: .4rem; border-top: 1px dashed #000; font-size: 1.05rem; }
+    }
     .scrim { position: fixed; inset: 0; background: rgba(31, 27, 22, .45); z-index: 1030; }
     .drawer { position: fixed; z-index: 1035; top: 0; right: 0; bottom: 0; width: min(100%, 580px); background: var(--hs-bg); display: flex; flex-direction: column; box-shadow: -12px 0 40px rgba(0,0,0,.2); }
     header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 1rem 1.25rem; background: var(--hs-surface); border-bottom: 1px solid var(--hs-line); }
@@ -181,6 +224,7 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   readonly closed = output<void>();
 
   readonly actions = inject(OrderActions);
+  readonly auth = inject(AuthService);
   private readonly api = inject(OrdersApi);
   private readonly catalog = inject(CatalogApi);
   private readonly toast = inject(ToastService);
@@ -210,6 +254,7 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
 
   isOpen(o: Order) { return o.status === 'New' || o.status === 'Ready'; }
   optionNames(l: OrderLine) { return l.options.map(o => o.optionName).join(', '); }
+  print() { window.print(); }
 
   async startAdd() {
     this.adding.set(true);

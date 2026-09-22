@@ -91,6 +91,10 @@ export class OrdersApi {
   list(q: { status?: string; payment?: string; search?: string; from?: string; to?: string; page?: number; pageSize?: number }) {
     return firstValueFrom(this.http.get<Paged<Order>>('/api/orders', { params: params(q) }));
   }
+  /** The exact list currently filtered, as a CSV file. Owner/Manager only. */
+  exportCsv(q: { status?: string; payment?: string; search?: string; from?: string; to?: string }) {
+    return firstValueFrom(this.http.get('/api/orders/export.csv', { params: params(q), responseType: 'blob' }));
+  }
   get(id: string) { return firstValueFrom(this.http.get<Order>(`/api/orders/${id}`)); }
   entryForms() { return firstValueFrom(this.http.get<EntryForm[]>('/api/orders/entry-forms')); }
 

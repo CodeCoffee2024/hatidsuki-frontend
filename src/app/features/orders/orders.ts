@@ -3,9 +3,10 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { OrdersApi } from '../../core/api';
+import { AuthService } from '../../core/auth.service';
 import { errorMessage } from '../../core/http';
 import { Order } from '../../core/models';
-import { MoneyPipe, StatusChipComponent } from '../../core/ui';
+import { MoneyPipe, StatusChipComponent, ToastService } from '../../core/ui';
 import { OrderDetailComponent } from './order-detail';
 
 /** Search and history for every order, past and present. The board is for today's work; this is for finding things. */
@@ -16,7 +17,14 @@ import { OrderDetailComponent } from './order-detail';
     <div class="page">
       <div class="page-head">
         <div><h1>All orders</h1><p>Find any order by name, number, date or status.</p></div>
-        <a class="btn btn-primary" routerLink="/app/orders/new"><i class="bi bi-plus-lg"></i> New order</a>
+        <div class="d-flex gap-2">
+          @if (auth.canSeeMoney()) {
+            <button type="button" class="btn btn-ghost" [disabled]="exporting() || !rows().length" (click)="exportCsv()">
+              <i class="bi bi-download"></i> {{ exporting() ? 'Exporting…' : 'Export CSV' }}
+            </button>
+          }
+          <a class="btn btn-primary" routerLink="/app/orders/new"><i class="bi bi-plus-lg"></i> New order</a>
+        </div>
       </div>
 
       <div class="filters card-lite">
@@ -90,6 +98,8 @@ import { OrderDetailComponent } from './order-detail';
 })
 export class OrdersComponent implements OnInit {
   private readonly api = inject(OrdersApi);
+  private readonly toast = inject(ToastService);
+  readonly auth = inject(AuthService);
   readonly pageSize = 20;
 
   readonly rows = signal<Order[]>([]);
@@ -98,6 +108,7 @@ export class OrdersComponent implements OnInit {
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly selected = signal<Order | null>(null);
+  readonly exporting = signal(false);
 
   search = ''; status = ''; payment = ''; from = ''; to = '';
   private debounce: ReturnType<typeof setTimeout> | null = null;
@@ -121,5 +132,17 @@ export class OrdersComponent implements OnInit {
       const r = await this.api.list({ status: this.status, payment: this.payment, search: this.search, from: this.from, to: this.to, page: this.page(), pageSize: this.pageSize });
       this.rows.set(r.items); this.total.set(r.total); this.error.set(null);
     } catch (e) { this.error.set(errorMessage(e)); } finally { this.loading.set(false); }
+  }
+
+  async exportCsv() {
+    this.exporting.set(true);
+    try {
+      const blob = await this.api.exportCsv({ status: this.status, payment: this.payment, search: this.search, from: this.from, to: this.to });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) { this.toast.error(errorMessage(e)); } finally { this.exporting.set(false); }
   }
 }
