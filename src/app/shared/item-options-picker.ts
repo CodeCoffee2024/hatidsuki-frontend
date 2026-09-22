@@ -1,4 +1,4 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, OnInit, computed, input, output, signal } from '@angular/core';
 import { ItemOptionGroup, OptionSelections } from '../core/models';
 import { MoneyPipe } from '../core/ui';
 import { ModalComponent } from './modal';
@@ -78,7 +78,7 @@ export interface PickedOptions { options: OptionSelections; quantity: number; }
     @media (max-width: 380px) { .foot { flex-direction: column; align-items: stretch; } .total { text-align: center; } }
   `,
 })
-export class ItemOptionsPickerComponent {
+export class ItemOptionsPickerComponent implements OnInit {
   readonly item = input.required<{ id: string; name: string; price: number; optionGroups: ItemOptionGroup[] }>();
   readonly currency = input.required<string>();
   readonly mode = input<'order' | 'preview'>('order');
@@ -90,7 +90,7 @@ export class ItemOptionsPickerComponent {
   readonly selections = signal<OptionSelections>({});
   readonly quantity = signal(1);
 
-  constructor() {
+  ngOnInit() {
     const init = this.initial();
     if (init) { this.selections.set(init.options); this.quantity.set(init.quantity); }
     else this.selections.set(this.defaultSelections());
