@@ -38,13 +38,13 @@ const uid = () => crypto.randomUUID();
       @for (g of groups(); track g.id; let gi = $index) {
         <fieldset class="group card-lite">
           <div class="row g-2 align-items-end mb-2">
-            <div class="col-6"><label class="form-label small">Group name</label>
+            <div class="col-12 col-sm-6"><label class="form-label small">Group name</label>
               <input class="form-control form-control-sm" [(ngModel)]="g.name" maxlength="60" placeholder="e.g. Size"></div>
-            <div class="col-3"><label class="form-label small">Pick</label>
+            <div class="col-8 col-sm-3"><label class="form-label small">Pick</label>
               <select class="form-select form-select-sm" [(ngModel)]="g.selectionType">
                 <option value="single">One</option><option value="multiple">Several</option>
               </select></div>
-            <div class="col-3 d-flex gap-1 justify-content-end">
+            <div class="col-4 col-sm-3 d-flex gap-1 justify-content-end">
               <button type="button" class="btn btn-ghost btn-sm" [disabled]="gi === 0" (click)="moveGroup(gi, -1)" aria-label="Move up"><i class="bi bi-arrow-up"></i></button>
               <button type="button" class="btn btn-ghost btn-sm" [disabled]="gi === groups().length - 1" (click)="moveGroup(gi, 1)" aria-label="Move down"><i class="bi bi-arrow-down"></i></button>
               <button type="button" class="btn btn-ghost btn-sm" (click)="removeGroup(gi)" aria-label="Remove group"><i class="bi bi-trash3"></i></button>
@@ -61,13 +61,15 @@ const uid = () => crypto.randomUUID();
           @for (o of g.options; track o.id; let oi = $index) {
             <div class="opt-row">
               <input class="form-control form-control-sm name" [(ngModel)]="o.name" maxlength="60" placeholder="Option name">
-              <div class="delta-wrap"><span class="pfx">+</span><input class="form-control form-control-sm delta" type="number" step="0.01" [(ngModel)]="o.priceDelta"></div>
-              <label class="form-check mb-0" title="Available to order"><input class="form-check-input" type="checkbox" [(ngModel)]="o.isAvailable"> <span class="form-check-label small">Available</span></label>
-              <label class="form-check mb-0" title="Pre-selected in the customer's picker"><input class="form-check-input" type="checkbox" [(ngModel)]="o.isDefault"> <span class="form-check-label small">Default</span></label>
-              <div class="opt-acts">
-                <button type="button" class="btn btn-ghost btn-sm" [disabled]="oi === 0" (click)="moveOption(gi, oi, -1)" aria-label="Move up"><i class="bi bi-arrow-up"></i></button>
-                <button type="button" class="btn btn-ghost btn-sm" [disabled]="oi === g.options.length - 1" (click)="moveOption(gi, oi, 1)" aria-label="Move down"><i class="bi bi-arrow-down"></i></button>
-                <button type="button" class="btn btn-ghost btn-sm" (click)="removeOption(gi, oi)" aria-label="Remove option"><i class="bi bi-x-lg"></i></button>
+              <div class="opt-row-rest">
+                <div class="delta-wrap"><span class="pfx">+</span><input class="form-control form-control-sm delta" type="number" step="0.01" [(ngModel)]="o.priceDelta"></div>
+                <label class="form-check mb-0" title="Available to order"><input class="form-check-input" type="checkbox" [(ngModel)]="o.isAvailable"> <span class="form-check-label small">Available</span></label>
+                <label class="form-check mb-0" title="Pre-selected in the customer's picker"><input class="form-check-input" type="checkbox" [(ngModel)]="o.isDefault"> <span class="form-check-label small">Default</span></label>
+                <div class="opt-acts">
+                  <button type="button" class="btn btn-ghost btn-sm" [disabled]="oi === 0" (click)="moveOption(gi, oi, -1)" aria-label="Move up"><i class="bi bi-arrow-up"></i></button>
+                  <button type="button" class="btn btn-ghost btn-sm" [disabled]="oi === g.options.length - 1" (click)="moveOption(gi, oi, 1)" aria-label="Move down"><i class="bi bi-arrow-down"></i></button>
+                  <button type="button" class="btn btn-ghost btn-sm" (click)="removeOption(gi, oi)" aria-label="Remove option"><i class="bi bi-x-lg"></i></button>
+                </div>
               </div>
             </div>
           }
@@ -96,12 +98,18 @@ const uid = () => crypto.randomUUID();
     .hint { color: var(--hs-muted); font-size: .78rem; }
     .group { margin-bottom: 1rem; padding: .9rem 1rem; }
     .num { width: 70px; }
-    .opt-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
-    .opt-row .name { flex: 1; min-width: 0; }
+    .opt-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; flex-wrap: wrap; }
+    .opt-row .name { flex: 1 1 160px; min-width: 0; }
+    .opt-row-rest { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; flex: 1 1 auto; }
     .delta-wrap { display: flex; align-items: center; gap: .25rem; }
     .delta-wrap .pfx { color: var(--hs-muted); }
     .delta { width: 90px; }
-    .opt-acts { display: flex; gap: .1rem; flex: none; }
+    .opt-acts { display: flex; gap: .1rem; flex: none; margin-left: auto; }
+    @media (max-width: 480px) {
+      .opt-row .name { flex-basis: 100%; }
+      .opt-row-rest { width: 100%; }
+      .opt-acts { margin-left: 0; }
+    }
   `,
 })
 export class ItemOptionsEditorComponent implements OnInit {

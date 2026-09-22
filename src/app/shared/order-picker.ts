@@ -134,11 +134,13 @@ function unitPriceOf(item: PublicItem, options: OptionSelections): number {
     .step { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--hs-line); background: var(--hs-surface); font-size: 1.35rem; line-height: 1; color: var(--hs-ink); }
     .step:hover:not(:disabled) { background: var(--hs-primary-soft); border-color: var(--hs-primary); }
     .step:disabled { opacity: .35; }
-    .stepper.sm .step { width: 34px; height: 34px; font-size: 1.1rem; }
+    .stepper.sm .step { width: 38px; height: 38px; font-size: 1.1rem; }
     .q { min-width: 2.1rem; text-align: center; font-weight: 700; font-size: 1.1rem; }
     .choose { min-height: 44px; }
-    .option-line { display: flex; align-items: center; gap: .6rem; margin: -.3rem 0 0 1.2rem; padding: .5rem .8rem; background: var(--hs-surface-2); border-radius: 10px; }
-    .opt-summary { flex: 1; min-width: 0; font-size: .9rem; color: var(--hs-ink); }
+    .option-line { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem .6rem; margin: -.25rem 0 0 .75rem; padding: .5rem .7rem;
+      background: var(--hs-surface-2); border-radius: 10px; }
+    .opt-summary { flex: 1 1 100%; min-width: 0; font-size: .9rem; color: var(--hs-ink); }
+    @media (max-width: 420px) { .option-line { margin-left: .25rem; } }
   `,
 })
 export class OrderPickerComponent {

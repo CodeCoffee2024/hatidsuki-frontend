@@ -72,8 +72,10 @@ export interface PickedOptions { options: OptionSelections; quantity: number; }
     .step { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--hs-line); background: var(--hs-surface); font-size: 1.25rem; }
     .step:disabled { opacity: .35; }
     .q { min-width: 2rem; text-align: center; font-weight: 700; }
-    .foot { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--hs-line); padding-top: 1rem; }
+    .foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .6rem 1rem; border-top: 1px solid var(--hs-line); padding-top: 1rem; }
+    .foot .btn { min-height: 44px; flex: 1 1 auto; }
     .total { font-size: 1.25rem; font-weight: 750; }
+    @media (max-width: 380px) { .foot { flex-direction: column; align-items: stretch; } .total { text-align: center; } }
   `,
 })
 export class ItemOptionsPickerComponent {
