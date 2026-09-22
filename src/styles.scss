@@ -42,6 +42,7 @@
 }
 
 html, body { min-height: 100%; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; } /* stop mobile Safari/Chrome auto-inflating text on rotation */
 body { background: var(--hs-bg); color: var(--hs-ink); -webkit-font-smoothing: antialiased; font-feature-settings: "kern", "liga"; }
 h1, h2, h3, h4 { font-weight: 700; letter-spacing: -.015em; text-wrap: balance; }
 p { text-wrap: pretty; }
